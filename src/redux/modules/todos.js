@@ -1,51 +1,43 @@
-import { createSlice } from "@reduxjs/toolkit";
+// redux/modules/todos.js
+import axios from "axios";
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-const todos = createSlice({
+const initialState = {
+  todos: [],
+  isLoading: false,
+  error: null,
+};
+
+export const __getTodos = createAsyncThunk(
+  "todos/getTodos",
+  async (payload, thunkAPI) => {
+    try {
+      const data = await axios.get("http://localhost:3001/todos");
+      return thunkAPI.fulfillWithValue(data.data);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error);
+    }
+  }
+);
+
+export const todosSlice = createSlice({
   name: "todos",
-  initialState: {
-    todos: [
-      {
-        id: "1",
-        title: "리액트",
-        body: "리액트를 배워봅시다.",
-        isDone: false,
-      },
-      {
-        id: "2",
-        title: "리액트",
-        body: "리액트를 배워봅시다.",
-        isDone: true,
-      },
-    ],
-    todo: {
-      id: "0",
-      title: "",
-      body: "",
-      isDone: false,
+  initialState,
+  reducers: {},
+  extraReducers: {
+    [__getTodos.pending]: (state) => {
+      state.isLoading = true; // 네트워크 요청이 시작되면 로딩상태를 true로 변경합니다.
     },
-  },
-  reducers: {
-    addTodo(state, action) {
-      state.todos = [...state.todos, action.payload];
+    [__getTodos.fulfilled]: (state, action) => {
+      state.isLoading = false; // 네트워크 요청이 끝났으니, false로 변경합니다.
+      state.todos = action.payload; // Store에 있는 todos에 서버에서 가져온 todos를 넣습니다.
     },
-    deleteTodo(state, action) {
-      state.todos = state.todos.filter((todo) => todo.id !== action.payload);
-    },
-    toggleStatusTodo(state, action) {
-      state.todos = state.todos.map((todo) => {
-        if (todo.id === action.payload) {
-          return { ...todo, isDone: !todo.isDone };
-        } else {
-          return todo;
-        }
-      });
-    },
-    getTodoByID(state, action) {
-      state.todo = state.todos.find((todo) => todo.id === action.payload);
+    [__getTodos.rejected]: (state, action) => {
+      state.isLoading = false; // 에러가 발생했지만, 네트워크 요청이 끝났으니, false로 변경합니다.
+      state.error = action.payload; // catch 된 error 객체를 state.error에 넣습니다.
     },
   },
 });
 
-export const todosActions = todos.actions;
-
-export default todos;
+export const {} = todosSlice.actions;
+export default todosSlice.reducer;
